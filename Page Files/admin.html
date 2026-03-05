@@ -70,12 +70,35 @@
             color: #ef4444;
             transform: scale(1.1);
         }
+
+        /* Responsive sidebar */
+        .admin-sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 35;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.active { display: block; }
+
+        @media (max-width: 1023px) {
+            .admin-sidebar { transform: translateX(-100%); }
+            .admin-sidebar.open { transform: translateX(0); }
+            .admin-main { margin-left: 0 !important; }
+        }
     </style>
 </head>
 <body class="bg-cream-50 min-h-screen flex">
 
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
     <!-- ============ SIDEBAR ============ -->
-    <aside class="fixed left-0 top-0 bottom-0 w-64 bg-maroon-950 text-gray-400 flex flex-col z-40">
+    <aside class="admin-sidebar fixed left-0 top-0 bottom-0 w-64 bg-maroon-950 text-gray-400 flex flex-col z-40" id="admin-sidebar">
         <!-- Brand -->
         <div class="px-6 py-6 border-b border-white/5">
             <div class="flex items-center gap-3">
@@ -123,17 +146,22 @@
     </aside>
 
     <!-- ============ MAIN CONTENT ============ -->
-    <main class="ml-64 flex-1 min-h-screen">
+    <main class="admin-main ml-64 flex-1 min-h-screen">
 
         <!-- Top Bar -->
-        <header class="sticky top-0 bg-cream-50/90 backdrop-blur-sm z-30 border-b border-cream-200/50 px-8 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 w-96 shadow-sm border border-cream-200/50">
-                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
-                    <input type="text" id="dashboard-search" placeholder="Search orders, products, customers..." class="bg-transparent border-none outline-none text-sm text-gray-700 w-full placeholder:text-gray-400 font-body">
+        <header class="sticky top-0 bg-cream-50/90 backdrop-blur-sm z-30 border-b border-cream-200/50 px-4 lg:px-8 py-4">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-maroon-800 p-2 rounded-lg hover:bg-maroon-50 transition-colors">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                    <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 w-full max-w-sm lg:w-96 shadow-sm border border-cream-200/50">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                        <input type="text" id="dashboard-search" placeholder="Search orders, products..." class="bg-transparent border-none outline-none text-sm text-gray-700 w-full placeholder:text-gray-400 font-body">
+                    </div>
                 </div>
-                <div class="flex items-center gap-5">
-                    <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 lg:gap-5">
+                    <div class="hidden sm:flex items-center gap-3">
                         <span class="text-sm font-medium text-gray-700">Admin User</span>
                         <div class="w-9 h-9 rounded-xl bg-maroon-800 text-white flex items-center justify-center text-xs font-bold">AU</div>
                     </div>
@@ -144,7 +172,7 @@
             </div>
         </header>
 
-        <div class="px-8 py-8">
+        <div class="px-4 lg:px-8 py-6 lg:py-8">
             <!-- Page Title -->
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-maroon-800">Dashboard</h1>
@@ -157,8 +185,8 @@
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-gray-400 text-sm font-medium font-body">Total Orders Today</p>
-                            <h2 class="text-3xl font-bold text-maroon-800 mt-2 font-body">47</h2>
-                            <p class="text-emerald-500 text-sm font-medium mt-1 font-body"><i class="fa-solid fa-arrow-up text-xs mr-1"></i>+12% from yesterday</p>
+                            <h2 id="stat-orders-today" class="text-3xl font-bold text-maroon-800 mt-2 font-body">—</h2>
+                            <p id="stat-orders-sub" class="text-gray-400 text-sm font-medium mt-1 font-body">Loading...</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-maroon-800 flex items-center justify-center">
                             <i class="fa-solid fa-cart-shopping text-gold-400"></i>
@@ -169,8 +197,8 @@
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-gray-400 text-sm font-medium font-body">Total Revenue</p>
-                            <h2 class="text-3xl font-bold text-maroon-800 mt-2 font-body">GH₵ 3,847</h2>
-                            <p class="text-emerald-500 text-sm font-medium mt-1 font-body"><i class="fa-solid fa-arrow-up text-xs mr-1"></i>+8% from yesterday</p>
+                            <h2 id="stat-revenue" class="text-3xl font-bold text-maroon-800 mt-2 font-body">—</h2>
+                            <p id="stat-revenue-sub" class="text-gray-400 text-sm font-medium mt-1 font-body">Loading...</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center">
                             <i class="fa-solid fa-cedi-sign text-white"></i>
@@ -181,8 +209,8 @@
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-gray-400 text-sm font-medium font-body">Low Stock Alerts</p>
-                            <h2 class="text-3xl font-bold text-maroon-800 mt-2 font-body">5</h2>
-                            <p class="text-amber-500 text-sm font-medium mt-1 font-body"><i class="fa-solid fa-triangle-exclamation text-xs mr-1"></i>Items need restocking</p>
+                            <h2 id="stat-low-stock" class="text-3xl font-bold text-maroon-800 mt-2 font-body">—</h2>
+                            <p id="stat-low-stock-sub" class="text-amber-500 text-sm font-medium mt-1 font-body">Loading...</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center">
                             <i class="fa-solid fa-box-open text-white"></i>

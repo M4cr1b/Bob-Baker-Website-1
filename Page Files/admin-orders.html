@@ -37,12 +37,21 @@
         .logout-btn:hover { color: #ef4444; transform: scale(1.1); }
         .stat-card { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease; }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(107, 29, 42, 0.08), 0 12px 24px rgba(107, 29, 42, 0.04); }
+        .admin-sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
+        .sidebar-overlay.active { display: block; }
+        @media (max-width: 1023px) {
+            .admin-sidebar { transform: translateX(-100%); }
+            .admin-sidebar.open { transform: translateX(0); }
+            .admin-main { margin-left: 0 !important; }
+        }
     </style>
 </head>
 <body class="bg-cream-50 min-h-screen flex">
 
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
     <!-- SIDEBAR -->
-    <aside class="fixed left-0 top-0 bottom-0 w-64 bg-maroon-950 text-gray-400 flex flex-col z-40">
+    <aside class="admin-sidebar fixed left-0 top-0 bottom-0 w-64 bg-maroon-950 text-gray-400 flex flex-col z-40" id="admin-sidebar">
         <div class="px-6 py-6 border-b border-white/5">
             <div class="flex items-center gap-3">
                 <img src="../brand_assets/Logo.jpeg" alt="Logo" class="h-10 w-auto rounded-lg">
@@ -67,16 +76,21 @@
     </aside>
 
     <!-- MAIN -->
-    <main class="ml-64 flex-1 min-h-screen">
+    <main class="admin-main ml-64 flex-1 min-h-screen">
         <!-- Top Bar -->
-        <header class="sticky top-0 bg-cream-50/90 backdrop-blur-sm z-30 border-b border-cream-200/50 px-8 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 w-96 shadow-sm border border-cream-200/50">
-                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
-                    <input type="text" id="order-search" placeholder="Search orders by name or product..." class="bg-transparent border-none outline-none text-sm text-gray-700 w-full placeholder:text-gray-400" style="font-family:Inter,sans-serif">
+        <header class="sticky top-0 bg-cream-50/90 backdrop-blur-sm z-30 border-b border-cream-200/50 px-4 lg:px-8 py-4">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-maroon-800 p-2 rounded-lg hover:bg-maroon-50 transition-colors">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                    <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 w-full max-w-sm lg:w-96 shadow-sm border border-cream-200/50">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                        <input type="text" id="order-search" placeholder="Search orders..." class="bg-transparent border-none outline-none text-sm text-gray-700 w-full placeholder:text-gray-400" style="font-family:Inter,sans-serif">
+                    </div>
                 </div>
-                <div class="flex items-center gap-5">
-                    <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 lg:gap-5">
+                    <div class="hidden sm:flex items-center gap-3">
                         <span class="text-sm font-medium text-gray-700">Admin User</span>
                         <div class="w-9 h-9 rounded-xl bg-maroon-800 text-white flex items-center justify-center text-xs font-bold">AU</div>
                     </div>
@@ -85,11 +99,11 @@
             </div>
         </header>
 
-        <div class="px-8 py-8">
+        <div class="px-4 lg:px-8 py-6 lg:py-8">
             <!-- Page Title + Date Picker -->
-            <div class="flex items-center justify-between mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 class="text-3xl font-bold text-maroon-800">Order Management</h1>
+                    <h1 class="text-2xl lg:text-3xl font-bold text-maroon-800">Order Management</h1>
                     <p class="text-gray-400 text-sm mt-1" style="font-family:Inter,sans-serif">Track and manage orders by day.</p>
                 </div>
                 <div class="flex items-center gap-3">

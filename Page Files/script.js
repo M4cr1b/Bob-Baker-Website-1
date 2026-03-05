@@ -1,5 +1,14 @@
 // script.js
 
+// --- RESPONSIVE SIDEBAR ---
+function toggleSidebar() {
+    const sidebar = document.getElementById('admin-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
+    sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('active');
+}
+
 // --- CONFIGURATION ---
 // API routes (proxied through Vercel serverless functions)
 const N8N_ORDER_WEBHOOK = "/api/order";
@@ -64,12 +73,12 @@ function logout() {
 
 // --- PRODUCT DATA ---
 const products = [
-    { id: 1, name: "Banana Bread", price: 20.00, image: "../brand_assets/Banana bread.png", desc: "Sweet & moist, made with ripe bananas" },
-    { id: 2, name: "Coconut Bread", price: 20.00, image: "../brand_assets/Coconut Bread.png", desc: "Tropical coconut flavor in every bite" },
-    { id: 3, name: "Pawpaw Bread", price: 20.00, image: "../brand_assets/pawpaw bread.png", desc: "Rich papaya-infused artisan bread" },
-    { id: 4, name: "Banapaw Bread", price: 20.00, image: "../brand_assets/Banapaw Bread.png", desc: "Banana & pawpaw fusion delight" },
-    { id: 5, name: "Honey Bread", price: 20.00, image: "../brand_assets/Honey Bread.png", desc: "Naturally sweetened with pure honey" },
-    { id: 6, name: "Plantain Bread", price: 20.00, image: "../brand_assets/Plantain Bread.png", desc: "A Ghanaian favorite, soft & hearty" }
+    { id: 1, name: "Banana Bread", prices: [10, 20], image: "../brand_assets/Banana bread.png", desc: "Sweet & moist, made with ripe bananas" },
+    { id: 2, name: "Coconut Bread", prices: [10, 20], image: "../brand_assets/Coconut Bread.png", desc: "Tropical coconut flavor in every bite" },
+    { id: 3, name: "Pawpaw Bread", prices: [10, 20], image: "../brand_assets/pawpaw bread.png", desc: "Rich papaya-infused artisan bread" },
+    { id: 4, name: "Banapaw Bread", prices: [10, 20], image: "../brand_assets/Banapaw Bread.png", desc: "Banana & pawpaw fusion delight" },
+    { id: 5, name: "Honey Bread", prices: [10, 20], image: "../brand_assets/Honey Bread.png", desc: "Naturally sweetened with pure honey" },
+    { id: 6, name: "Plantain Bread", prices: [10, 20], image: "../brand_assets/Plantain Bread.png", desc: "A Ghanaian favorite, soft & hearty" }
 ];
 
 // --- STOCK AVAILABILITY ---
@@ -148,19 +157,25 @@ function addToCart(productId) {
         return;
     }
 
-    const existingItem = cart.find(item => item.id === productId);
+    // Get selected price from the product card's price selector
+    const priceSelect = document.getElementById('price-select-' + productId);
+    const selectedPrice = priceSelect ? parseFloat(priceSelect.value) : product.prices[0];
+
+    // Use a unique cart key combining product id and price
+    const cartKey = productId + '-' + selectedPrice;
+    const existingItem = cart.find(item => item.cartKey === cartKey);
     if (existingItem) {
         existingItem.quantity += 1;
     } else {
-        cart.push({ ...product, quantity: 1 });
+        cart.push({ ...product, price: selectedPrice, cartKey, quantity: 1 });
     }
     saveCart();
 
-    showToast(`${product.name} added to cart!`);
+    showToast(`${product.name} (GH₵ ${selectedPrice.toFixed(2)}) added to cart!`);
 }
 
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.id !== productId);
+function removeFromCart(cartKey) {
+    cart = cart.filter(item => (item.cartKey || item.id) !== cartKey);
     saveCart();
 }
 
@@ -188,7 +203,7 @@ function updateCartUI() {
                         <h4 class="text-sm font-semibold text-gray-800 truncate">${item.name}</h4>
                         <p class="text-xs text-gray-500">GH₵ ${item.price.toFixed(2)} × ${item.quantity}</p>
                     </div>
-                    <button class="remove-item text-gray-400 p-1" onclick="removeFromCart(${item.id})" aria-label="Remove item">
+                    <button class="remove-item text-gray-400 p-1" onclick="removeFromCart('${item.cartKey || item.id}')" aria-label="Remove item">
                         <i class="fa-solid fa-trash-can text-sm"></i>
                     </button>
                 `;
@@ -323,42 +338,102 @@ async function loadAdminData() {
     if (refreshIcon) refreshIcon.classList.add('fa-spin');
 
     try {
-        const response = await fetch(N8N_ADMIN_DATA_WEBHOOK, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // Fetch orders and inventory in parallel
+        const [orderResponse, inventoryResponse] = await Promise.all([
+            fetch(N8N_ADMIN_DATA_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' } }),
+            fetch(N8N_INVENTORY_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => null)
+        ]);
 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!orderResponse.ok) throw new Error(`HTTP error! status: ${orderResponse.status}`);
 
-        let orders = await response.json();
-        if (!Array.isArray(orders)) orders = [orders];
+        let allOrders = await orderResponse.json();
+        if (!Array.isArray(allOrders)) allOrders = [allOrders];
 
         // Filter to today's orders only
         const today = new Date().toISOString().split('T')[0];
-        orders = orders.filter(o => {
+        const todayOrders = allOrders.filter(o => {
             const orderDate = (o.Date || o.date || '').split('T')[0];
             return orderDate === today;
         });
 
-        dashboardOrders = orders;
+        dashboardOrders = todayOrders;
 
-        // Update stat cards
-        const statCards = document.querySelectorAll('.stat-card');
-        if (statCards.length >= 3) {
-            let totalRevenue = 0;
-            let pendingCount = 0;
-            orders.forEach(o => {
-                totalRevenue += parseFloat(o['Total Price'] || o.total_price || 0);
-                if ((o.Status || 'Pending') === 'Pending') pendingCount++;
-            });
-            const orderCountEl = statCards[0].querySelector('h2');
-            const revenueEl = statCards[1].querySelector('h2');
-            const lowStockEl = statCards[2].querySelector('h2');
-            if (orderCountEl) orderCountEl.textContent = orders.length;
-            if (revenueEl) revenueEl.textContent = `GH₵ ${totalRevenue.toFixed(2)}`;
+        // Calculate today's stats
+        let totalRevenue = 0;
+        let pendingCount = 0;
+        todayOrders.forEach(o => {
+            totalRevenue += parseFloat(o['Total Price'] || o.total_price || 0);
+            if ((o.Status || 'Pending') === 'Pending') pendingCount++;
+        });
+
+        // Update order count stat
+        const orderCountEl = document.getElementById('stat-orders-today');
+        const orderSubEl = document.getElementById('stat-orders-sub');
+        if (orderCountEl) orderCountEl.textContent = todayOrders.length;
+        if (orderSubEl) {
+            if (pendingCount > 0) {
+                orderSubEl.innerHTML = `<i class="fa-solid fa-clock text-xs mr-1"></i>${pendingCount} pending`;
+                orderSubEl.className = 'text-amber-500 text-sm font-medium mt-1 font-body';
+            } else if (todayOrders.length > 0) {
+                orderSubEl.innerHTML = `<i class="fa-solid fa-check text-xs mr-1"></i>All processed`;
+                orderSubEl.className = 'text-emerald-500 text-sm font-medium mt-1 font-body';
+            } else {
+                orderSubEl.textContent = 'No orders yet today';
+                orderSubEl.className = 'text-gray-400 text-sm font-medium mt-1 font-body';
+            }
         }
 
-        renderDashboardOrders(orders);
+        // Update revenue stat
+        const revenueEl = document.getElementById('stat-revenue');
+        const revenueSubEl = document.getElementById('stat-revenue-sub');
+        if (revenueEl) revenueEl.textContent = `GH₵ ${totalRevenue.toFixed(2)}`;
+        if (revenueSubEl) {
+            if (todayOrders.length > 0) {
+                const avg = totalRevenue / todayOrders.length;
+                revenueSubEl.innerHTML = `<i class="fa-solid fa-receipt text-xs mr-1"></i>Avg GH₵ ${avg.toFixed(2)} per order`;
+                revenueSubEl.className = 'text-emerald-500 text-sm font-medium mt-1 font-body';
+            } else {
+                revenueSubEl.textContent = 'No revenue yet today';
+                revenueSubEl.className = 'text-gray-400 text-sm font-medium mt-1 font-body';
+            }
+        }
+
+        // Update low stock stat from inventory data
+        const lowStockEl = document.getElementById('stat-low-stock');
+        const lowStockSubEl = document.getElementById('stat-low-stock-sub');
+        if (inventoryResponse && inventoryResponse.ok) {
+            let raw = await inventoryResponse.json();
+            let inventory = Array.isArray(raw) ? raw : (raw.data || raw.items || [raw]);
+            let lowStockCount = 0;
+            let outOfStockCount = 0;
+            inventory.forEach(item => {
+                const qty = parseInt(item.Quantity || item.quantity || 0);
+                if (qty === 0) outOfStockCount++;
+                else if (qty < 5) lowStockCount++;
+            });
+            const alertCount = lowStockCount + outOfStockCount;
+            if (lowStockEl) lowStockEl.textContent = alertCount;
+            if (lowStockSubEl) {
+                if (outOfStockCount > 0) {
+                    lowStockSubEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-xs mr-1"></i>${outOfStockCount} out of stock`;
+                    lowStockSubEl.className = 'text-red-500 text-sm font-medium mt-1 font-body';
+                } else if (lowStockCount > 0) {
+                    lowStockSubEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-xs mr-1"></i>Items need restocking`;
+                    lowStockSubEl.className = 'text-amber-500 text-sm font-medium mt-1 font-body';
+                } else {
+                    lowStockSubEl.innerHTML = `<i class="fa-solid fa-check text-xs mr-1"></i>All products well stocked`;
+                    lowStockSubEl.className = 'text-emerald-500 text-sm font-medium mt-1 font-body';
+                }
+            }
+        } else {
+            if (lowStockEl) lowStockEl.textContent = '—';
+            if (lowStockSubEl) {
+                lowStockSubEl.textContent = 'Could not load inventory';
+                lowStockSubEl.className = 'text-gray-400 text-sm font-medium mt-1 font-body';
+            }
+        }
+
+        renderDashboardOrders(todayOrders);
     } catch (error) {
         console.error("n8n Load Error:", error);
         orderTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem; color:#ef4444;">Error: ${error.message}</td></tr>`;
@@ -1087,7 +1162,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 class="text-lg font-bold text-maroon-800 mb-1">${product.name}</h3>
                         <p class="text-gray-400 text-sm mb-4">${product.desc}</p>
                         <div class="flex items-center justify-between">
-                            <span class="text-xl font-bold text-gold-600">GH₵ ${product.price.toFixed(2)}</span>
+                            <select id="price-select-${product.id}"
+                                    class="text-lg font-bold text-gold-600 bg-transparent border border-gold-300 rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold-400"
+                                    style="color: #B8860B; border-color: #D4A017;">
+                                ${product.prices.map(p => `<option value="${p}">GH₵ ${p.toFixed(2)}</option>`).join('')}
+                            </select>
                             <button onclick="addToCart(${product.id})"
                                     class="add-to-cart-btn btn-maroon bg-maroon-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2">
                                 <i class="fa-solid fa-cart-plus"></i> Add
