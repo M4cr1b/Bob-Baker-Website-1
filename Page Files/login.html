@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login — Bob Baker's Bakery</title>
+    <link rel="icon" type="image/jpeg" href="../brand_assets/Logo.jpeg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        maroon: { 800: '#6B1D2A', 900: '#5a1a25', 950: '#3a0a14' },
+                        gold: { 400: '#facc15', 500: '#D4A017' },
+                        cream: { 50: '#FFFDF7', 100: '#FDF5E6', 200: '#FAEBD7' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; }
+
+        .grain::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.06;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        .form-input {
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-input:focus {
+            border-color: #D4A017;
+            box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.15);
+            outline: none;
+        }
+
+        .btn-login {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(107, 29, 42, 0.3);
+        }
+        .btn-login:focus-visible {
+            outline: 2px solid #D4A017;
+            outline-offset: 2px;
+        }
+        .btn-login:active {
+            transform: translateY(0);
+            opacity: 0.95;
+        }
+
+        .loading-overlay { display: none !important; }
+        .loading-overlay.active { display: flex !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 0.8s linear infinite; }
+
+        .login-box {
+            transition: transform 0.15s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-maroon-900 relative grain overflow-hidden">
+
+    <!-- Decorative circles -->
+    <div class="absolute top-[-200px] right-[-200px] w-[500px] h-[500px] rounded-full bg-maroon-800/40 blur-3xl"></div>
+    <div class="absolute bottom-[-150px] left-[-150px] w-[400px] h-[400px] rounded-full bg-gold-500/10 blur-3xl"></div>
+
+    <!-- Loading overlay -->
+    <div id="loader" class="loading-overlay fixed inset-0 z-50 bg-maroon-950/95 flex-col items-center justify-center">
+        <div class="spinner w-12 h-12 border-4 border-white/20 border-t-gold-400 rounded-full mb-4"></div>
+        <p class="text-cream-100 text-sm font-medium">Verifying Credentials...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 min-h-screen flex items-center justify-center px-6 py-12">
+        <div class="w-full max-w-md">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <img src="../brand_assets/Logo.jpeg" alt="Bob Baker's Bakery" class="h-20 w-auto mx-auto rounded-xl mb-4 shadow-lg shadow-black/20">
+                <p class="text-cream-200/60 text-sm">Management Dashboard</p>
+            </div>
+
+            <!-- Login Card -->
+            <div class="login-box bg-white rounded-2xl p-8 md:p-10 shadow-2xl shadow-black/30">
+                <div class="text-center mb-8">
+                    <div class="w-14 h-14 rounded-xl bg-maroon-800 flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-user-shield text-gold-400 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-maroon-800">Admin Login</h2>
+                    <p class="text-gray-400 text-sm mt-1">Sign in to access the dashboard</p>
+                </div>
+
+                <div id="login-error" style="display:none" class="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3 mb-6 text-center">
+                    Invalid Username or Password
+                </div>
+
+                <form id="login-form" class="space-y-5">
+                    <div>
+                        <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                        <input type="text" id="username" placeholder="Enter username" required
+                               class="form-input w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50/50 text-gray-800 text-sm">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <input type="password" id="password" placeholder="Enter password" required
+                               class="form-input w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50/50 text-gray-800 text-sm">
+                    </div>
+
+                    <button type="submit" class="btn-login w-full bg-maroon-800 text-white py-3.5 rounded-lg font-semibold text-sm">
+                        <i class="fa-solid fa-right-to-bracket mr-2"></i> Sign In
+                    </button>
+                </form>
+
+                <p class="text-center mt-6">
+                    <a href="index.html" class="text-sm text-gold-500 hover:text-maroon-800 font-medium transition-colors">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Back to Shop
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

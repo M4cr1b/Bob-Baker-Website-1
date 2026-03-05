@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management — Bob Baker's Bakery</title>
+    <link rel="icon" type="image/jpeg" href="../brand_assets/Logo.jpeg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        maroon: { 50: '#fdf2f4', 800: '#6B1D2A', 900: '#5a1a25', 950: '#3a0a14' },
+                        gold: { 400: '#facc15', 500: '#D4A017', 600: '#b8860b' },
+                        cream: { 50: '#FFFDF7', 100: '#FDF5E6', 200: '#FAEBD7' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        h1, h2, h3, h4 { font-family: 'Playfair Display', Georgia, serif; }
+        .sidebar-link { transition: background 0.2s ease, color 0.2s ease; }
+        .sidebar-link:hover { background: rgba(212, 160, 23, 0.08); color: #D4A017; }
+        .sidebar-link.active { background: rgba(212, 160, 23, 0.12); color: #D4A017; border-right: 3px solid #D4A017; }
+        .btn-action { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease; }
+        .btn-action:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212, 160, 23, 0.25); }
+        .btn-action:focus-visible { outline: 2px solid #D4A017; outline-offset: 2px; }
+        .btn-action:active { transform: translateY(0); }
+        .logout-btn { transition: color 0.2s ease, transform 0.2s ease; }
+        .logout-btn:hover { color: #ef4444; transform: scale(1.1); }
+        .stat-card { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(107, 29, 42, 0.08), 0 12px 24px rgba(107, 29, 42, 0.04); }
+    </style>
+</head>
+<body class="bg-cream-50 min-h-screen flex">
+
+    <!-- SIDEBAR -->
+    <aside class="fixed left-0 top-0 bottom-0 w-64 bg-maroon-950 text-gray-400 flex flex-col z-40">
+        <div class="px-6 py-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <img src="../brand_assets/Logo.jpeg" alt="Logo" class="h-10 w-auto rounded-lg">
+                <div>
+                    <h3 class="text-white text-sm font-bold" style="font-family:Inter,sans-serif">Bakery Admin</h3>
+                    <p class="text-gray-500 text-xs">Management System</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 py-4">
+            <ul class="space-y-1 px-3">
+                <li><a href="admin.html" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm"><i class="fa-solid fa-table-columns w-5 text-center"></i> Dashboard</a></li>
+                <li><a href="admin-orders.html" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-sm"><i class="fa-solid fa-clipboard-list w-5 text-center"></i> Order Management</a></li>
+                <li><a href="admin-inventory.html" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm"><i class="fa-solid fa-box-open w-5 text-center"></i> Product Inventory</a></li>
+                <li><a href="admin-reports.html" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm"><i class="fa-solid fa-chart-line w-5 text-center"></i> Sales Reports</a></li>
+            </ul>
+        </nav>
+        <div class="px-6 py-4 border-t border-white/5">
+            <a href="index.html" class="text-xs text-gray-500 hover:text-gold-500 transition-colors flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> Back to Store</a>
+            <p class="text-gray-600 text-xs mt-2">&copy; 2026 Bakery Admin</p>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="ml-64 flex-1 min-h-screen">
+        <!-- Top Bar -->
+        <header class="sticky top-0 bg-cream-50/90 backdrop-blur-sm z-30 border-b border-cream-200/50 px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 w-96 shadow-sm border border-cream-200/50">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                    <input type="text" id="order-search" placeholder="Search orders by name or product..." class="bg-transparent border-none outline-none text-sm text-gray-700 w-full placeholder:text-gray-400" style="font-family:Inter,sans-serif">
+                </div>
+                <div class="flex items-center gap-5">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-gray-700">Admin User</span>
+                        <div class="w-9 h-9 rounded-xl bg-maroon-800 text-white flex items-center justify-center text-xs font-bold">AU</div>
+                    </div>
+                    <button id="logout-btn" class="logout-btn text-gray-400 p-1" title="Logout"><i class="fa-solid fa-right-from-bracket text-lg"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <div class="px-8 py-8">
+            <!-- Page Title + Date Picker -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-maroon-800">Order Management</h1>
+                    <p class="text-gray-400 text-sm mt-1" style="font-family:Inter,sans-serif">Track and manage orders by day.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="text-sm font-medium text-gray-600" style="font-family:Inter,sans-serif">Date:</label>
+                    <input type="date" id="order-date-picker" class="px-4 py-2.5 rounded-xl border border-cream-200 bg-white text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-gold-500/30 focus:border-gold-500" style="font-family:Inter,sans-serif">
+                    <button id="load-orders-btn" class="btn-action bg-gold-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Load Orders
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="order-summary-cards">
+                <div class="stat-card bg-white rounded-2xl p-6 shadow-sm border border-cream-200/30">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm font-medium" style="font-family:Inter,sans-serif">Orders Today</p>
+                            <h2 class="text-3xl font-bold text-maroon-800 mt-2" id="summary-order-count" style="font-family:Inter,sans-serif">—</h2>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-maroon-800 flex items-center justify-center"><i class="fa-solid fa-cart-shopping text-gold-400"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card bg-white rounded-2xl p-6 shadow-sm border border-cream-200/30">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm font-medium" style="font-family:Inter,sans-serif">Revenue</p>
+                            <h2 class="text-3xl font-bold text-maroon-800 mt-2" id="summary-revenue" style="font-family:Inter,sans-serif">—</h2>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center"><i class="fa-solid fa-cedi-sign text-white"></i></div>
+                    </div>
+                </div>
+                <div class="stat-card bg-white rounded-2xl p-6 shadow-sm border border-cream-200/30">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm font-medium" style="font-family:Inter,sans-serif">Pending Orders</p>
+                            <h2 class="text-3xl font-bold text-maroon-800 mt-2" id="summary-pending" style="font-family:Inter,sans-serif">—</h2>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center"><i class="fa-solid fa-clock text-white"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-cream-200/30 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-cream-50/50">
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Order ID</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Customer</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Phone</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Items</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Total</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                                <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body" class="divide-y divide-cream-200/30">
+                            <tr>
+                                <td colspan="8" class="text-center py-12 text-gray-400 text-sm">
+                                    Select a date and click "Load Orders" to view orders.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
