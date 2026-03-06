@@ -452,11 +452,12 @@ function renderDashboardOrders(orders) {
     const orderTableBody = document.getElementById('order-rows');
     if (!orderTableBody) return;
 
-    orderTableBody.innerHTML = '';
-
     if (orders.length === 0) {
         orderTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:#94a3b8;">No orders for today.</td></tr>';
     } else {
+        // ⚡ Bolt: Accumulate HTML in a string rather than updating innerHTML in a loop
+        // This avoids O(N^2) parsing/rendering overhead for long lists of orders
+        let rowsHtml = '';
         orders.forEach(order => {
             const rowNum = order.row_number || order.id;
             const customerName = order.Name || order['Customer Name'] || order.customer || 'Guest';
@@ -485,8 +486,9 @@ function renderDashboardOrders(orders) {
                         <i class="fa-regular fa-eye text-gray-400 hover:text-maroon-800 cursor-pointer transition-colors" title="View Details"></i>
                     </td>
                 </tr>`;
-            orderTableBody.innerHTML += row;
+            rowsHtml += row;
         });
+        orderTableBody.innerHTML = rowsHtml;
     }
 }
 
@@ -639,13 +641,14 @@ function renderOrdersTable(orders) {
     const tableBody = document.getElementById('orders-table-body');
     if (!tableBody) return;
 
-    tableBody.innerHTML = '';
-
     if (orders.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-12 text-gray-400 text-sm">No orders found.</td></tr>';
         return;
     }
 
+    // ⚡ Bolt: Accumulate HTML in a string rather than updating innerHTML in a loop
+    // This avoids O(N^2) parsing/rendering overhead for long lists of orders
+    let rowsHtml = '';
     orders.forEach(order => {
         const rowNum = order.row_number || order.id || '—';
         const name = order.Name || order['Customer Name'] || order.customer_name || 'Guest';
@@ -662,7 +665,7 @@ function renderOrdersTable(orders) {
             `<option value="${opt}" ${opt === status ? 'selected' : ''}>${opt}</option>`
         ).join('');
 
-        tableBody.innerHTML += `
+        rowsHtml += `
             <tr class="hover:bg-cream-50/50 transition-colors">
                 <td class="px-6 py-4 text-sm font-medium" style="color:#b8860b">#${rowNum}</td>
                 <td class="px-6 py-4 text-sm text-gray-700">${name}</td>
@@ -679,6 +682,7 @@ function renderOrdersTable(orders) {
                 <td class="px-6 py-4 text-sm text-gray-400">${time}</td>
             </tr>`;
     });
+    tableBody.innerHTML = rowsHtml;
 }
 
 function filterOrdersBySearch(query) {
@@ -734,13 +738,14 @@ async function loadInventory() {
             }
         }
 
-        tableBody.innerHTML = '';
-
         if (inventory.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-12 text-gray-400 text-sm">No inventory data found.</td></tr>';
             return;
         }
 
+        // ⚡ Bolt: Accumulate HTML in a string rather than updating innerHTML in a loop
+        // This avoids O(N^2) parsing/rendering overhead for long lists of inventory items
+        let rowsHtml = '';
         inventory.forEach(item => {
             const name = item['Product Name'] || item.product_name || '—';
             const qty = parseInt(item.Quantity || item.quantity || 0);
@@ -756,7 +761,7 @@ async function loadInventory() {
                 statusBadge = '<span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">In Stock</span>';
             }
 
-            tableBody.innerHTML += `
+            rowsHtml += `
                 <tr class="hover:bg-cream-50/50 transition-colors">
                     <td class="px-6 py-4 text-sm font-medium text-gray-800">${name}</td>
                     <td class="px-6 py-4 text-sm font-bold text-maroon-800">${qty}</td>
@@ -769,6 +774,7 @@ async function loadInventory() {
                     </td>
                 </tr>`;
         });
+        tableBody.innerHTML = rowsHtml;
     } catch (error) {
         console.error("Inventory load error:", error);
         tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-12 text-red-500 text-sm">Error: ${error.message}</td></tr>`;
