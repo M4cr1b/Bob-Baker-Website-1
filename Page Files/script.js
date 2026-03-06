@@ -358,12 +358,17 @@ async function loadAdminData() {
 
         dashboardOrders = todayOrders;
 
-        // Calculate today's stats
+        // Calculate today's stats (only Ready orders count toward revenue)
         let totalRevenue = 0;
         let pendingCount = 0;
+        let completedCount = 0;
         todayOrders.forEach(o => {
-            totalRevenue += parseFloat(o['Total Price'] || o.total_price || 0);
-            if ((o.Status || 'Pending') === 'Pending') pendingCount++;
+            const status = (o.Status || 'Pending');
+            if (status === 'Pending') pendingCount++;
+            if (status === 'Ready') {
+                totalRevenue += parseFloat(o['Total Price'] || o.total_price || 0);
+                completedCount++;
+            }
         });
 
         // Update order count stat
@@ -388,12 +393,12 @@ async function loadAdminData() {
         const revenueSubEl = document.getElementById('stat-revenue-sub');
         if (revenueEl) revenueEl.textContent = `GH₵ ${totalRevenue.toFixed(2)}`;
         if (revenueSubEl) {
-            if (todayOrders.length > 0) {
-                const avg = totalRevenue / todayOrders.length;
-                revenueSubEl.innerHTML = `<i class="fa-solid fa-receipt text-xs mr-1"></i>Avg GH₵ ${avg.toFixed(2)} per order`;
+            if (completedCount > 0) {
+                const avg = totalRevenue / completedCount;
+                revenueSubEl.innerHTML = `<i class="fa-solid fa-receipt text-xs mr-1"></i>From ${completedCount} completed order${completedCount !== 1 ? 's' : ''}`;
                 revenueSubEl.className = 'text-emerald-500 text-sm font-medium mt-1 font-body';
             } else {
-                revenueSubEl.textContent = 'No revenue yet today';
+                revenueSubEl.textContent = 'No completed orders yet';
                 revenueSubEl.className = 'text-gray-400 text-sm font-medium mt-1 font-body';
             }
         }
@@ -618,8 +623,11 @@ function updateOrderSummary(orders) {
     let totalRevenue = 0;
     let pendingCount = 0;
     orders.forEach(o => {
-        totalRevenue += parseFloat(o['Total Price'] || o.total_price || 0);
-        if ((o.Status || 'Pending') === 'Pending') pendingCount++;
+        const status = (o.Status || 'Pending');
+        if (status === 'Ready') {
+            totalRevenue += parseFloat(o['Total Price'] || o.total_price || 0);
+        }
+        if (status === 'Pending') pendingCount++;
     });
 
     if (countEl) countEl.textContent = orders.length;
@@ -872,7 +880,6 @@ function renderSalesChart(period) {
     oldCanvas.remove();
     const newCanvas = document.createElement('canvas');
     newCanvas.id = 'sales-chart';
-    newCanvas.setAttribute('height', '100');
     parent.appendChild(newCanvas);
 
     const ctx = newCanvas.getContext('2d');
@@ -894,9 +901,9 @@ function renderSalesChart(period) {
     if (ordersEl) ordersEl.textContent = totalOrders;
     if (avgEl) avgEl.textContent = `GH₵ ${avgOrder.toFixed(2)}`;
 
-    // Find top product across all data
+    // Find top product across all data (exclude cancelled orders)
     const productMap = {};
-    salesData.forEach(o => {
+    salesData.filter(o => (o.Status || 'Pending') !== 'Cancelled').forEach(o => {
         const name = o['Product Name'] || o.items || '';
         name.split(', ').forEach(p => {
             const t = p.trim();
@@ -907,6 +914,7 @@ function renderSalesChart(period) {
     if (topEl) topEl.textContent = topProduct ? topProduct[0] : '—';
 
     const hasData = aggregated.labels.length > 0;
+    const isMobile = window.innerWidth < 768;
 
     salesChart = new Chart(ctx, {
         type: 'bar',
@@ -918,27 +926,27 @@ function renderSalesChart(period) {
                     data: hasData ? aggregated.revenues : [0],
                     backgroundColor: 'rgba(107, 29, 42, 0.75)',
                     hoverBackgroundColor: 'rgba(107, 29, 42, 0.95)',
-                    borderRadius: 8,
+                    borderRadius: isMobile ? 4 : 8,
                     borderSkipped: false,
                     order: 2,
                     yAxisID: 'y',
-                    barPercentage: 0.6,
-                    categoryPercentage: 0.7
+                    barPercentage: isMobile ? 0.8 : 0.6,
+                    categoryPercentage: isMobile ? 0.85 : 0.7
                 },
                 {
                     label: 'Orders',
                     data: hasData ? aggregated.orderCounts : [0],
                     type: 'line',
                     borderColor: '#D4A017',
-                    borderWidth: 3,
+                    borderWidth: isMobile ? 2 : 3,
                     backgroundColor: 'rgba(212, 160, 23, 0.08)',
                     fill: true,
                     tension: 0.4,
                     pointBackgroundColor: '#D4A017',
                     pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
+                    pointBorderWidth: isMobile ? 1 : 2,
+                    pointRadius: isMobile ? 3 : 5,
+                    pointHoverRadius: isMobile ? 5 : 7,
                     order: 1,
                     yAxisID: 'y1'
                 }
@@ -946,25 +954,27 @@ function renderSalesChart(period) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: !isMobile,
+            aspectRatio: isMobile ? undefined : 2.5,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: {
-                    position: 'top',
-                    align: 'end',
+                    position: isMobile ? 'bottom' : 'top',
+                    align: isMobile ? 'center' : 'end',
                     labels: {
-                        font: { family: 'Inter', size: 13, weight: '500' },
+                        font: { family: 'Inter', size: isMobile ? 11 : 13, weight: '500' },
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        padding: 24,
-                        color: '#6B1D2A'
+                        padding: isMobile ? 12 : 24,
+                        color: '#6B1D2A',
+                        boxWidth: isMobile ? 8 : 12
                     }
                 },
                 tooltip: {
                     backgroundColor: '#3a0a14',
-                    titleFont: { family: 'Inter', size: 13, weight: '600' },
-                    bodyFont: { family: 'Inter', size: 12 },
-                    padding: 14,
+                    titleFont: { family: 'Inter', size: isMobile ? 11 : 13, weight: '600' },
+                    bodyFont: { family: 'Inter', size: isMobile ? 10 : 12 },
+                    padding: isMobile ? 8 : 14,
                     cornerRadius: 10,
                     displayColors: true,
                     callbacks: {
@@ -981,44 +991,51 @@ function renderSalesChart(period) {
                 y: {
                     type: 'linear', position: 'left',
                     beginAtZero: true,
-                    title: { display: true, text: 'Revenue (GH₵)', font: { family: 'Inter', size: 12, weight: '600' }, color: '#6B1D2A' },
+                    title: { display: !isMobile, text: 'Revenue (GH₵)', font: { family: 'Inter', size: 12, weight: '600' }, color: '#6B1D2A' },
                     grid: { color: 'rgba(107, 29, 42, 0.06)', drawBorder: false },
                     ticks: {
-                        font: { family: 'Inter', size: 11 },
+                        font: { family: 'Inter', size: isMobile ? 9 : 11 },
                         color: '#999',
-                        callback: function(value) { return 'GH₵ ' + value; },
-                        padding: 8
+                        callback: function(value) { return isMobile ? '₵' + value : 'GH₵ ' + value; },
+                        padding: isMobile ? 4 : 8,
+                        maxTicksLimit: isMobile ? 5 : 8
                     },
                     border: { display: false }
                 },
                 y1: {
                     type: 'linear', position: 'right',
                     beginAtZero: true,
-                    title: { display: true, text: 'Orders', font: { family: 'Inter', size: 12, weight: '600' }, color: '#D4A017' },
+                    title: { display: !isMobile, text: 'Orders', font: { family: 'Inter', size: 12, weight: '600' }, color: '#D4A017' },
                     grid: { drawOnChartArea: false, drawBorder: false },
                     ticks: {
-                        font: { family: 'Inter', size: 11 },
+                        font: { family: 'Inter', size: isMobile ? 9 : 11 },
                         color: '#999',
                         stepSize: 1,
-                        padding: 8
+                        padding: isMobile ? 4 : 8,
+                        maxTicksLimit: isMobile ? 5 : 8
                     },
                     border: { display: false }
                 },
                 x: {
                     grid: { display: false, drawBorder: false },
                     ticks: {
-                        font: { family: 'Inter', size: 11 },
+                        font: { family: 'Inter', size: isMobile ? 8 : 11 },
                         color: '#666',
-                        maxRotation: 45,
+                        maxRotation: isMobile ? 60 : 45,
                         autoSkip: true,
-                        maxTicksLimit: period === 'daily' ? 15 : 20,
-                        padding: 8
+                        maxTicksLimit: isMobile ? 7 : (period === 'daily' ? 15 : 20),
+                        padding: isMobile ? 4 : 8
                     },
                     border: { display: false }
                 }
             }
         }
     });
+
+    // Set explicit height for mobile
+    if (isMobile) {
+        newCanvas.style.height = '280px';
+    }
 }
 
 function aggregateByPeriod(orders, period) {
@@ -1055,8 +1072,13 @@ function aggregateByPeriod(orders, period) {
         }
 
         if (!map[sortKey]) map[sortKey] = { label: key, revenue: 0, count: 0 };
-        map[sortKey].revenue += parseFloat(o['Total Price'] || o.total_price || 0);
-        map[sortKey].count += 1;
+        const status = (o.Status || 'Pending');
+        if (status === 'Ready') {
+            map[sortKey].revenue += parseFloat(o['Total Price'] || o.total_price || 0);
+        }
+        if (status !== 'Cancelled') {
+            map[sortKey].count += 1;
+        }
     });
 
     const sortedKeys = Object.keys(map).sort();

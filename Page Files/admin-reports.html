@@ -103,7 +103,7 @@
             </div>
 
             <!-- Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-8">
                 <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-cream-200/30">
                     <p class="text-gray-400 text-xs font-medium" style="font-family:Inter,sans-serif">Period Revenue</p>
                     <h2 class="text-2xl font-bold text-maroon-800 mt-1" id="report-revenue" style="font-family:Inter,sans-serif">—</h2>
@@ -125,16 +125,16 @@
             <!-- Chart Card -->
             <div class="bg-white rounded-2xl shadow-sm border border-cream-200/30 overflow-hidden">
                 <!-- Tabs -->
-                <div class="flex border-b border-cream-200/50 px-6">
-                    <button class="tab-btn active px-5 py-4 text-sm font-semibold text-gray-400 border-b-2 border-transparent" data-period="daily" onclick="switchReportTab('daily')">Daily</button>
-                    <button class="tab-btn px-5 py-4 text-sm font-semibold text-gray-400 border-b-2 border-transparent" data-period="weekly" onclick="switchReportTab('weekly')">Weekly</button>
-                    <button class="tab-btn px-5 py-4 text-sm font-semibold text-gray-400 border-b-2 border-transparent" data-period="monthly" onclick="switchReportTab('monthly')">Monthly</button>
-                    <button class="tab-btn px-5 py-4 text-sm font-semibold text-gray-400 border-b-2 border-transparent" data-period="yearly" onclick="switchReportTab('yearly')">Yearly</button>
+                <div class="flex overflow-x-auto border-b border-cream-200/50 px-4 md:px-6">
+                    <button class="tab-btn active px-4 md:px-5 py-3 md:py-4 text-xs md:text-sm font-semibold text-gray-400 border-b-2 border-transparent whitespace-nowrap" data-period="daily" onclick="switchReportTab('daily')">Daily</button>
+                    <button class="tab-btn px-4 md:px-5 py-3 md:py-4 text-xs md:text-sm font-semibold text-gray-400 border-b-2 border-transparent whitespace-nowrap" data-period="weekly" onclick="switchReportTab('weekly')">Weekly</button>
+                    <button class="tab-btn px-4 md:px-5 py-3 md:py-4 text-xs md:text-sm font-semibold text-gray-400 border-b-2 border-transparent whitespace-nowrap" data-period="monthly" onclick="switchReportTab('monthly')">Monthly</button>
+                    <button class="tab-btn px-4 md:px-5 py-3 md:py-4 text-xs md:text-sm font-semibold text-gray-400 border-b-2 border-transparent whitespace-nowrap" data-period="yearly" onclick="switchReportTab('yearly')">Yearly</button>
                 </div>
 
                 <!-- Chart -->
-                <div class="p-6">
-                    <canvas id="sales-chart" height="100"></canvas>
+                <div class="p-3 md:p-6" style="position:relative; width:100%;">
+                    <canvas id="sales-chart"></canvas>
                 </div>
 
                 <!-- Loading state -->
